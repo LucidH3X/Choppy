@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CSV Chop</title>
+<meta name="description" content="Split big CSV files into upload-sized pieces, right in your browser. Files never leave your computer.">
+<style>
+  :root {
+    --bg: #f6f5f1;
+    --panel: #ffffff;
+    --ink: #1b1d22;
+    --muted: #63666e;
+    --line: #dddad2;
+    --accent: #0f7b6c;
+    --accent-ink: #ffffff;
+    --accent-soft: #e3f2ef;
+    --warn: #a15c00;
+    --err: #b3261e;
+    --mono: ui-monospace, "JetBrains Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121417;
+      --panel: #1a1d21;
+      --ink: #e8e6e1;
+      --muted: #9a9ca3;
+      --line: #2c3036;
+      --accent: #3fc1a8;
+      --accent-ink: #0b1513;
+      --accent-soft: #17302b;
+      --warn: #f0a83a;
+      --err: #ff8a80;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.5 var(--sans);
+  }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 16px 64px; }
+  h1 { font: 700 2rem/1.1 var(--mono); margin: 0 0 8px; letter-spacing: -0.02em; }
+  h1 span { color: var(--accent); }
+  .lede { color: var(--muted); margin: 0 0 28px; }
+  .lede b { color: var(--ink); font-weight: 600; }
+
+  .settings {
+    display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: center;
+    margin-bottom: 16px; font-size: 0.95rem;
+  }
+  .settings label { display: flex; align-items: center; gap: 8px; }
+  .settings input[type=number] {
+    width: 6.5em; padding: 6px 8px; font: inherit; font-family: var(--mono);
+    color: var(--ink); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 6px;
+  }
+
+  .drop {
+    display: block;
+    border: 2px dashed var(--line); border-radius: 12px;
+    background: var(--panel);
+    padding: 40px 20px; text-align: center; cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .drop:hover, .drop:focus-visible, .drop.over {
+    border-color: var(--accent); background: var(--accent-soft); outline: none;
+  }
+  .drop strong { display: block; font-size: 1.1rem; margin-bottom: 4px; }
+  .drop small { color: var(--muted); }
+  .drop .alt { margin-top: 12px; font-size: 0.9rem; }
+  .linkbtn {
+    background: none; border: 0; padding: 0; font: inherit;
+    color: var(--accent); text-decoration: underline; cursor: pointer;
+  }
+
+  ul.files { list-style: none; padding: 0; margin: 20px 0 0; }
+  ul.files li {
+    display: grid; grid-template-columns: 1fr auto auto; gap: 12px; align-items: center;
+    padding: 10px 12px; border-bottom: 1px solid var(--line);
+    font-family: var(--mono); font-size: 0.88rem;
+  }
+  ul.files li:first-child { border-top: 1px solid var(--line); }
+  .fname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fsize, .fstat { color: var(--muted); white-space: nowrap; }
+  .fstat.ok { color: var(--accent); }
+  .fstat.warn { color: var(--warn); }
+  .fstat.err { color: var(--err); }
+  .rm { background: none; border: 0; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 0 4px; }
+  .rm:hover { color: var(--err); }
+
+  .actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 20px; }
+  button.primary, a.primary {
+    display: inline-block; padding: 11px 20px; border-radius: 8px; border: 0;
+    background: var(--accent); color: var(--accent-ink);
+    font: 600 1rem var(--sans); text-decoration: none; cursor: pointer;
+  }
+  button.primary:disabled { opacity: .45; cursor: not-allowed; }
+  button.ghost {
+    padding: 10px 16px; border-radius: 8px; border: 1px solid var(--line);
+    background: transparent; color: var(--ink); font: inherit; cursor: pointer;
+  }
+
+  .progress { height: 6px; background: var(--line); border-radius: 3px; margin-top: 20px; overflow: hidden; display: none; }
+  .progress > div { height: 100%; width: 0; background: var(--accent); transition: width .1s; }
+  .status { margin-top: 10px; font-family: var(--mono); font-size: 0.88rem; color: var(--muted); min-height: 1.4em; }
+
+  footer { margin-top: 48px; color: var(--muted); font-size: 0.85rem; }
+  footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<main>
+  <h1>csv<span>_</span>chop</h1>
+  <p class="lede">Split big CSV files into pieces that fit under an upload limit. Every piece keeps the header row, and no row gets cut in half. <b>It all runs in your browser, so your files never leave your computer.</b></p>
+
+  <div class="settings">
+    <label>Max size per piece
+      <input id="maxMb" type="number" min="0.1" step="0.5" value="29.5"> MB
+    </label>
+  </div>
+
+  <label class="drop" id="drop" tabindex="0">
+    <strong>Drop CSV files or a folder here</strong>
+    <small>or click to pick files &middot; .csv, .tsv, .txt</small>
+    <input id="pick" type="file" multiple accept=".csv,.tsv,.txt,text/csv" hidden>
+  </label>
+  <div class="actions" style="margin-top:10px">
+    <button class="linkbtn" id="pickDir" type="button">Pick a whole folder instead</button>
+    <input id="pickDirInput" type="file" webkitdirectory multiple hidden>
+  </div>
+
+  <ul class="files" id="list"></ul>
+
+  <div class="actions">
+    <button class="primary" id="go" disabled>Chop &amp; download zip</button>
+    <button class="ghost" id="clear" hidden>Clear</button>
+    <a class="primary" id="dl" hidden>Download zip again</a>
+  </div>
+  <div class="progress" id="prog"><div></div></div>
+  <div class="status" id="status"></div>
+
+  <footer>
+    <p>Files that are already small enough go into the zip unchanged.</p>
+    <p>A single row bigger than the limit can't be split, so it gets its own piece and is flagged.</p>
+  </footer>
+</main>
+
+<script>
+(() => {
+  const ACCEPT = /\.(csv|tsv|txt)$/i;
+  const MB = 1024 * 1024;
+  const $ = (id) => document.getElementById(id);
+  const drop = $("drop"), pick = $("pick"), list = $("list"), go = $("go"),
+        clearBtn = $("clear"), dl = $("dl"), prog = $("prog"), bar = prog.firstElementChild,
+        status = $("status"), maxMbInput = $("maxMb");
+
+  let files = [];
+  let busy = false;
+  let lastUrl = null;
+
+  const fmt = (n) => n >= MB ? (n / MB).toFixed(1) + " MB" : n >= 1024 ? (n / 1024).toFixed(0) + " KB" : n + " B";
+
+  function addFiles(newOnes) {
+    const seen = new Set(files.map(f => f.file.name + "|" + f.file.size + "|" + f.path));
+    for (const { file, path } of newOnes) {
+      if (!ACCEPT.test(file.name)) continue;
+      const key = file.name + "|" + file.size + "|" + path;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      files.push({ file, path, stat: "", cls: "" });
+    }
+    render();
+  }
+
+  function render() {
+    list.innerHTML = "";
+    files.forEach((f, i) => {
+      const li = document.createElement("li");
+      const name = document.createElement("span");
+      name.className = "fname"; name.textContent = f.path || f.file.name; name.title = name.textContent;
+      const size = document.createElement("span");
+      size.className = "fsize"; size.textContent = fmt(f.file.size);
+      const stat = document.createElement("span");
+      stat.className = "fstat " + f.cls;
+      if (f.stat) stat.textContent = f.stat;
+      else if (!busy) {
+        const rm = document.createElement("button");
+        rm.className = "rm"; rm.textContent = "✕"; rm.title = "Remove";
+        rm.onclick = () => { files.splice(i, 1); render(); };
+        stat.appendChild(rm);
+      }
+      li.append(name, size, stat);
+      list.appendChild(li);
+    });
+    go.disabled = busy || files.length === 0;
+    clearBtn.hidden = busy || files.length === 0;
+  }
+
+  async function entriesToFiles(entry, prefix = "") {
+    if (entry.isFile) {
+      const file = await new Promise((res, rej) => entry.file(res, rej));
+      return [{ file, path: prefix + file.name }];
+    }
+    if (entry.isDirectory) {
+      const reader = entry.createReader();
+      const out = [];
+      for (;;) {
+        const batch = await new Promise((res, rej) => reader.readEntries(res, rej));
+        if (!batch.length) break;
+        for (const e of batch) out.push(...await entriesToFiles(e, prefix + entry.name + "/"));
+      }
+      return out;
+    }
+    return [];
+  }
+
+  drop.addEventListener("dragover", (e) => { e.preventDefault(); drop.classList.add("over"); });
+  drop.addEventListener("dragleave", () => drop.classList.remove("over"));
+  drop.addEventListener("drop", async (e) => {
+    e.preventDefault();
+    drop.classList.remove("over");
+    if (busy) return;
+    const items = [...(e.dataTransfer.items || [])];
+    const entries = items.map(it => it.webkitGetAsEntry && it.webkitGetAsEntry()).filter(Boolean);
+    if (entries.length) {
+      const all = [];
+      for (const en of entries) all.push(...await entriesToFiles(en));
+      addFiles(all);
+    } else {
+      addFiles([...e.dataTransfer.files].map(file => ({ file, path: file.name })));
+    }
+  });
+  drop.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); pick.click(); } });
+  pick.addEventListener("change", () => { addFiles([...pick.files].map(file => ({ file, path: file.name }))); pick.value = ""; });
+  $("pickDir").addEventListener("click", () => $("pickDirInput").click());
+  $("pickDirInput").addEventListener("change", (e) => {
+    addFiles([...e.target.files].map(file => ({ file, path: file.webkitRelativePath || file.name })));
+    e.target.value = "";
+  });
+  clearBtn.addEventListener("click", () => { files = []; status.textContent = ""; prog.style.display = "none"; dl.hidden = true; render(); });
+
+  const CRC_TABLE = (() => {
+    const t = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1;
+      t[n] = c >>> 0;
+    }
+    return t;
+  })();
+
+  async function crcAndSize(blob) {
+    let crc = 0xFFFFFFFF, size = 0;
+    const r = blob.stream().getReader();
+    for (;;) {
+      const { value, done } = await r.read();
+      if (done) break;
+      size += value.length;
+      for (let i = 0; i < value.length; i++) crc = CRC_TABLE[(crc ^ value[i]) & 0xFF] ^ (crc >>> 8);
+    }
+    return { crc: (crc ^ 0xFFFFFFFF) >>> 0, size };
+  }
+
+  const canDeflate = (() => {
+    try { new CompressionStream("deflate-raw"); return true; } catch { return false; }
+  })();
+
+  class ZipWriter {
+    constructor() {
+      this.parts = []; this.central = []; this.offset = 0; this.count = 0;
+      const d = new Date();
+      this.dosTime = (d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1);
+      this.dosDate = ((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate();
+    }
+    async add(name, blob) {
+      const nameBytes = new TextEncoder().encode(name);
+      const { crc, size } = await crcAndSize(blob);
+      let data = blob, method = 0;
+      if (canDeflate) {
+        const packed = await new Response(blob.stream().pipeThrough(new CompressionStream("deflate-raw"))).blob();
+        if (packed.size < size) { data = packed; method = 8; }
+      }
+      const csize = data.size;
+      if (this.offset + csize + 1024 > 0xFFFFFFFF) throw new Error("Zip would be over 4 GB. Try fewer files at once.");
+
+      const lh = new DataView(new ArrayBuffer(30));
+      lh.setUint32(0, 0x04034b50, true);
+      lh.setUint16(4, 20, true);
+      lh.setUint16(6, 0x0800, true);
+      lh.setUint16(8, method, true);
+      lh.setUint16(10, this.dosTime, true);
+      lh.setUint16(12, this.dosDate, true);
+      lh.setUint32(14, crc, true);
+      lh.setUint32(18, csize, true);
+      lh.setUint32(22, size, true);
+      lh.setUint16(26, nameBytes.length, true);
+      lh.setUint16(28, 0, true);
+
+      const ch = new DataView(new ArrayBuffer(46));
+      ch.setUint32(0, 0x02014b50, true);
+      ch.setUint16(4, 20, true);
+      ch.setUint16(6, 20, true);
+      ch.setUint16(8, 0x0800, true);
+      ch.setUint16(10, method, true);
+      ch.setUint16(12, this.dosTime, true);
+      ch.setUint16(14, this.dosDate, true);
+      ch.setUint32(16, crc, true);
+      ch.setUint32(20, csize, true);
+      ch.setUint32(24, size, true);
+      ch.setUint16(28, nameBytes.length, true);
+      ch.setUint32(42, this.offset, true);
+
+      this.parts.push(lh.buffer, nameBytes, data);
+      this.central.push(ch.buffer, nameBytes);
+      this.offset += 30 + nameBytes.length + csize;
+      this.count++;
+    }
+    finish() {
+      const cdSize = this.central.reduce((s, p) => s + p.byteLength, 0);
+      const end = new DataView(new ArrayBuffer(22));
+      end.setUint32(0, 0x06054b50, true);
+      end.setUint16(8, this.count, true);
+      end.setUint16(10, this.count, true);
+      end.setUint32(12, cdSize, true);
+      end.setUint32(16, this.offset, true);
+      return new Blob([...this.parts, ...this.central, end.buffer], { type: "application/zip" });
+    }
+  }
+
+  async function chopFile(file, maxBytes, emit, onRead) {
+    const reader = file.stream().getReader();
+    let inQuote = false, header = null;
+    let rowParts = [], rowLen = 0;
+    let cur = [], curSize = 0, rowsInCur = 0, oversized = 0;
+    const ready = [];
+
+    const concat = (parts, len) => {
+      const out = new Uint8Array(len); let o = 0;
+      for (const p of parts) { out.set(p, o); o += p.length; }
+      return out;
+    };
+    const endRow = () => {
+      if (header === null) {
+        header = concat(rowParts, rowLen);
+        if (header.length >= maxBytes) throw new Error("the header row alone is bigger than the limit");
+        cur = [header]; curSize = header.length;
+      } else {
+        if (curSize + rowLen > maxBytes && rowsInCur > 0) {
+          ready.push(cur);
+          cur = [header]; curSize = header.length; rowsInCur = 0;
+        }
+        if (header.length + rowLen > maxBytes) oversized++;
+        for (const p of rowParts) cur.push(p);
+        curSize += rowLen; rowsInCur++;
+      }
+      rowParts = []; rowLen = 0;
+    };
+
+    for (;;) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      let start = 0;
+      for (let i = 0; i < value.length; i++) {
+        const b = value[i];
+        if (b === 34) inQuote = !inQuote;
+        else if (b === 10 && !inQuote) {
+          const s = value.subarray(start, i + 1);
+          rowParts.push(s); rowLen += s.length; start = i + 1;
+          endRow();
+        }
+      }
+      if (start < value.length) { const s = value.subarray(start); rowParts.push(s); rowLen += s.length; }
+      onRead(value.length);
+      while (ready.length) await emit(new Blob(ready.shift()));
+    }
+    if (rowLen > 0) endRow();
+    if (cur.length) await emit(new Blob(cur));
+    return { oversized };
+  }
+
+  function uniqueName(name, used) {
+    if (!used.has(name)) { used.add(name); return name; }
+    const dot = name.lastIndexOf(".");
+    const stem = dot > 0 ? name.slice(0, dot) : name, ext = dot > 0 ? name.slice(dot) : "";
+    for (let n = 2; ; n++) {
+      const cand = `${stem} (${n})${ext}`;
+      if (!used.has(cand)) { used.add(cand); return cand; }
+    }
+  }
+
+  go.addEventListener("click", async () => {
+    const maxMb = parseFloat(maxMbInput.value);
+    if (!(maxMb > 0)) { status.textContent = "Set a max size above 0 MB."; return; }
+    const maxBytes = Math.floor(maxMb * MB);
+
+    busy = true;
+    files.forEach(f => { f.stat = "waiting"; f.cls = ""; });
+    render();
+    dl.hidden = true;
+    prog.style.display = "block";
+    bar.style.width = "0%";
+
+    const total = files.reduce((s, f) => s + f.file.size, 0) || 1;
+    let done = 0, pieces = 0, failed = 0;
+    const zip = new ZipWriter();
+    const used = new Set();
+    const tick = (n) => { done += n; bar.style.width = (100 * done / total).toFixed(1) + "%"; };
+
+    try {
+      for (const f of files) {
+        const { file } = f;
+        const dot = file.name.lastIndexOf(".");
+        const stem = dot > 0 ? file.name.slice(0, dot) : file.name;
+        const ext = dot > 0 ? file.name.slice(dot) : ".csv";
+        f.stat = "working…"; f.cls = ""; render();
+        status.textContent = `Chopping ${file.name}…`;
+
+        if (file.size <= maxBytes) {
+          await zip.add(uniqueName(file.name, used), file);
+          tick(file.size); pieces++;
+          f.stat = "kept as-is"; f.cls = "ok"; render();
+          continue;
+        }
+
+        let part = 0;
+        try {
+          const { oversized } = await chopFile(file, maxBytes, async (blob) => {
+            part++;
+            await zip.add(uniqueName(`${stem}_part${String(part).padStart(3, "0")}${ext}`, used), blob);
+          }, tick);
+          pieces += part;
+          f.stat = oversized ? `${part} pieces · ${oversized} huge row${oversized > 1 ? "s" : ""}` : `${part} pieces`;
+          f.cls = oversized ? "warn" : "ok";
+        } catch (err) {
+          failed++;
+          f.stat = "error: " + err.message; f.cls = "err";
+        }
+        render();
+      }
+
+      status.textContent = "Building zip…";
+      const blob = zip.finish();
+      if (lastUrl) URL.revokeObjectURL(lastUrl);
+      lastUrl = URL.createObjectURL(blob);
+      const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+      dl.href = lastUrl;
+      dl.download = `csv-chop-${stamp}.zip`;
+      dl.hidden = false;
+      dl.click();
+      bar.style.width = "100%";
+      status.textContent = `Done: ${pieces} file${pieces === 1 ? "" : "s"} in the zip (${fmt(blob.size)})` +
+        (failed ? `, ${failed} failed` : "") + ".";
+    } catch (err) {
+      status.textContent = "Something went wrong: " + err.message;
+    } finally {
+      busy = false;
+      render();
+    }
+  });
+})();
+</script>
+</body>
+</html>
