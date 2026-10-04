@@ -120,6 +120,9 @@
     <label>Max size per piece
       <input id="maxMb" type="number" min="0.1" step="0.5" value="29.5"> MB
     </label>
+    <label>Header rows
+      <input id="headerRows" type="number" min="1" step="1" value="1">
+    </label>
   </div>
 
   <label class="drop" id="drop" tabindex="0">
@@ -144,6 +147,7 @@
 
   <footer>
     <p>Files that are already small enough go into the zip unchanged.</p>
+    <p>If your files have more than one header line (like a row of column names plus a row of descriptions), set <b>Header rows</b> to match so every piece gets all of them.</p>
     <p>A single row bigger than the limit can't be split, so it gets its own piece and is flagged.</p>
   </footer>
 </main>
@@ -155,7 +159,7 @@
   const $ = (id) => document.getElementById(id);
   const drop = $("drop"), pick = $("pick"), list = $("list"), go = $("go"),
         clearBtn = $("clear"), dl = $("dl"), prog = $("prog"), bar = prog.firstElementChild,
-        status = $("status"), maxMbInput = $("maxMb");
+        status = $("status"), maxMbInput = $("maxMb"), headerRowsInput = $("headerRows");
 
   let files = [];
   let busy = false;
@@ -330,9 +334,9 @@
     }
   }
 
-  async function chopFile(file, maxBytes, emit, onRead) {
+  async function chopFile(file, maxBytes, headerRows, emit, onRead) {
     const reader = file.stream().getReader();
-    let inQuote = false, header = null;
+    let inQuote = false, header = null, headParts = [], headLen = 0;
     let rowParts = [], rowLen = 0;
     let cur = [], curSize = 0, rowsInCur = 0, oversized = 0;
     const ready = [];
@@ -342,11 +346,15 @@
       for (const p of parts) { out.set(p, o); o += p.length; }
       return out;
     };
+    const setHeader = () => {
+      header = concat(headParts, headLen);
+      if (header.length >= maxBytes) throw new Error("the header rows alone are bigger than the limit");
+      cur = [header]; curSize = header.length;
+    };
     const endRow = () => {
       if (header === null) {
-        header = concat(rowParts, rowLen);
-        if (header.length >= maxBytes) throw new Error("the header row alone is bigger than the limit");
-        cur = [header]; curSize = header.length;
+        headParts.push(concat(rowParts, rowLen)); headLen += rowLen;
+        if (headParts.length === headerRows) setHeader();
       } else {
         if (curSize + rowLen > maxBytes && rowsInCur > 0) {
           ready.push(cur);
@@ -377,6 +385,7 @@
       while (ready.length) await emit(new Blob(ready.shift()));
     }
     if (rowLen > 0) endRow();
+    if (header === null && headParts.length) setHeader();
     if (cur.length) await emit(new Blob(cur));
     return { oversized };
   }
@@ -394,6 +403,8 @@
   go.addEventListener("click", async () => {
     const maxMb = parseFloat(maxMbInput.value);
     if (!(maxMb > 0)) { status.textContent = "Set a max size above 0 MB."; return; }
+    const headerRows = parseInt(headerRowsInput.value, 10);
+    if (!(headerRows >= 1)) { status.textContent = "Header rows has to be 1 or more."; return; }
     const maxBytes = Math.floor(maxMb * MB);
 
     busy = true;
@@ -427,7 +438,7 @@
 
         let part = 0;
         try {
-          const { oversized } = await chopFile(file, maxBytes, async (blob) => {
+          const { oversized } = await chopFile(file, maxBytes, headerRows, async (blob) => {
             part++;
             await zip.add(uniqueName(`${stem}_part${String(part).padStart(3, "0")}${ext}`, used), blob);
           }, tick);
