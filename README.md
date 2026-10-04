@@ -1,4 +1,5 @@
 # Choppy
+<img width="2400" height="1260" alt="image" src="https://github.com/user-attachments/assets/4332b683-fd5b-4d48-8753-a759de482c05" />
 
 ### Brought to you by the North Redwood Raiders
 
