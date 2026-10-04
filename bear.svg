@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+      <path d="M40 0H0V40" fill="none" stroke="#1e1e2e" stroke-width="1"/>
+    </pattern>
+    <radialGradient id="glow" cx="0.7" cy="0.5" r="0.55">
+      <stop offset="0" stop-color="#cba6f7" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#cba6f7" stop-opacity="0"/>
+    </radialGradient>
+    <mask id="bite">
+      <rect x="0" y="0" width="1200" height="630" fill="#fff"/>
+      <circle cx="814" cy="418" r="20" fill="#000"/>
+      <circle cx="842" cy="414" r="26" fill="#000"/>
+      <circle cx="870" cy="418" r="20" fill="#000"/>
+    </mask>
+  </defs>
+
+  <rect width="1200" height="630" fill="#11111b"/>
+  <rect width="1200" height="630" fill="url(#grid)"/>
+  <rect width="1200" height="630" fill="url(#glow)"/>
+
+  <g font-family="'JetBrains Mono', 'DejaVu Sans Mono', Menlo, monospace">
+    <text x="80" y="250" font-size="92" font-weight="700" fill="#cdd6f4" letter-spacing="-3">Choppy</text>
+    <text x="84" y="306" font-size="28" fill="#a6adc8">big CSVs in. bite-size chunks.</text>
+    <g font-size="22" font-weight="700" fill="#cba6f7">
+      <rect x="84" y="348" width="372" height="44" rx="22" fill="#313244"/>
+      <text x="270" y="377" text-anchor="middle">Northern Redwood Raiders</text>
+    </g>
+    <text x="84" y="560" font-size="18" fill="#6c7086">$ ./choppy --max-mb 29.5 *.csv  # nom nom</text>
+  </g>
+
+  <g fill="none" stroke-linecap="round" stroke-width="10" transform="rotate(12 1110 500)">
+    <path d="M1067.6 457.6 A60 60 0 0 1 1152.4 457.6" stroke="#45475a" stroke-dasharray="22 14"/>
+    <path d="M1081.7 471.7 A40 40 0 0 1 1138.3 471.7" stroke="#cba6f7" opacity="0.6"/>
+    <path d="M1095.9 485.9 A20 20 0 0 1 1124.1 485.9" stroke="#cba6f7"/>
+    <circle cx="1110" cy="500" r="6" fill="#cba6f7" stroke="none"/>
+  </g>
+
+  <g>
+    <ellipse cx="840" cy="610" rx="230" ry="170" fill="#6b4329"/>
+    <ellipse cx="840" cy="620" rx="140" ry="110" fill="#8c5a3a"/>
+
+    <circle cx="722" cy="160" r="50" fill="#6b4329"/>
+    <circle cx="722" cy="160" r="27" fill="#b9805a"/>
+    <circle cx="958" cy="160" r="50" fill="#6b4329"/>
+    <circle cx="958" cy="160" r="27" fill="#b9805a"/>
+
+    <circle cx="840" cy="275" r="148" fill="#7a4d30"/>
+    <ellipse cx="840" cy="225" rx="105" ry="60" fill="#87573a" opacity="0.6"/>
+
+    <path d="M762 248 q20 -22 40 0" fill="none" stroke="#11111b" stroke-width="9" stroke-linecap="round"/>
+    <path d="M878 248 q20 -22 40 0" fill="none" stroke="#11111b" stroke-width="9" stroke-linecap="round"/>
+    <ellipse cx="748" cy="300" rx="24" ry="15" fill="#eba0ac" opacity="0.55"/>
+    <ellipse cx="932" cy="300" rx="24" ry="15" fill="#eba0ac" opacity="0.55"/>
+
+    <ellipse cx="840" cy="322" rx="70" ry="52" fill="#d6a47c"/>
+    <ellipse cx="840" cy="298" rx="22" ry="14" fill="#11111b"/>
+    <ellipse cx="834" cy="294" rx="7" ry="4" fill="#6c7086"/>
+    <path d="M840 312 v14 M808 334 q16 18 32 -4 q16 22 32 4" fill="none" stroke="#11111b" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M832 337 l4 9 l5 -8 Z" fill="#ffffff"/>
+  </g>
+
+  <g transform="translate(0 -36) rotate(-6 840 460)">
+    <g mask="url(#bite)">
+      <rect x="690" y="410" width="300" height="88" rx="16" fill="#313244" stroke="#45475a" stroke-width="4"/>
+      <rect x="690" y="476" width="300" height="22" rx="10" fill="#181825"/>
+      <circle cx="745" cy="452" r="7" fill="#cba6f7"/>
+      <circle cx="772" cy="452" r="7" fill="#cba6f7"/>
+      <circle cx="799" cy="452" r="7" fill="#fab387"/>
+      <circle cx="826" cy="452" r="7" fill="#f38ba8"/>
+      <g stroke="#45475a" stroke-width="4" stroke-linecap="round">
+        <path d="M880 444 h70 M880 460 h70"/>
+      </g>
+    </g>
+    <rect x="712" y="320" width="12" height="96" rx="6" fill="#313244"/>
+    <circle cx="718" cy="318" r="9" fill="#45475a"/>
+    <path d="M962 414 L968 360 L1000 334" fill="none" stroke="#313244" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="1002" cy="332" r="9" fill="#45475a"/>
+  </g>
+
+  <ellipse cx="700" cy="428" rx="44" ry="38" fill="#6b4329"/>
+  <path d="M676 406 v14 M694 400 v16 M712 402 v14" stroke="#4f301d" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="984" cy="402" rx="44" ry="38" fill="#6b4329"/>
+  <path d="M962 382 v14 M980 376 v16 M998 378 v14" stroke="#4f301d" stroke-width="5" stroke-linecap="round"/>
+
+  <g>
+    <g transform="translate(905 330) rotate(18)">
+      <rect width="34" height="42" rx="4" fill="#cdd6f4"/>
+      <path d="M7 12 h20 M7 21 h20 M7 30 h14" stroke="#cba6f7" stroke-width="4" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(958 270) rotate(-14)">
+      <rect width="28" height="34" rx="4" fill="#cdd6f4"/>
+      <path d="M6 10 h16 M6 17 h16 M6 24 h11" stroke="#cba6f7" stroke-width="3.5" stroke-linecap="round"/>
+    </g>
+    <g transform="translate(1030 205) rotate(24)">
+      <rect width="22" height="27" rx="3" fill="#cdd6f4" opacity="0.85"/>
+      <path d="M5 8 h12 M5 14 h12 M5 20 h8" stroke="#cba6f7" stroke-width="3" stroke-linecap="round"/>
+    </g>
+    <rect x="870" y="372" width="9" height="9" rx="2" fill="#45475a" transform="rotate(30 874 376)"/>
+    <rect x="935" y="388" width="7" height="7" rx="1.5" fill="#45475a"/>
+    <rect x="1000" y="300" width="8" height="8" rx="2" fill="#313244" transform="rotate(-20 1004 304)"/>
+    <g font-family="'JetBrains Mono', 'DejaVu Sans Mono', monospace" font-size="22" font-weight="700" fill="#cba6f7">
+      <text x="1070" y="300" opacity="0.8">01</text>
+      <text x="1100" y="250" opacity="0.5">10</text>
+      <text x="1060" y="180" opacity="0.35">1</text>
+      <text x="990" y="390" opacity="0.6">0</text>
+    </g>
+    <g stroke="#cdd6f4" stroke-width="4" stroke-linecap="round" opacity="0.5">
+      <path d="M948 380 l14 -10 M965 395 l18 -4 M940 362 l8 -14"/>
+    </g>
+  </g>
+</svg>
