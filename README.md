@@ -1,7 +1,4 @@
-# Choppy
-<img width="2400" height="1260" alt="image" src="https://github.com/user-attachments/assets/4332b683-fd5b-4d48-8753-a759de482c05" />
-
-### Brought to you by the North Redwood Raiders
+<img width="1200" height="630" alt="image" src="https://github.com/user-attachments/assets/f2092058-fb30-44f7-ae03-b22c9fc76385" />
 
 Split big CSV files into pieces that fit under an upload limit (default 29.5 MB), then download them all as one zip.
 
@@ -21,3 +18,4 @@ Open the page, set the max size, drop your CSVs in, and click **Chop & download 
 - The finished zip has to be under 4 GB.
 - Very large batches are held in browser memory while the zip is built. Chrome and Firefox handle hundreds of MB fine.
 - It needs a modern browser: Chrome/Edge 103+, Firefox 113+ or Safari 16.4+. Older browsers still work but the zip won't be compressed.
+
